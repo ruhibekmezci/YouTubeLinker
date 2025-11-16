@@ -5,9 +5,31 @@ chrome.runtime.onMessage.addListener(
   (request, sender, sendResponse) => {
     if (request.action === "getVideoDetails") {
       try {
-        // Sayfadaki video başlığını bul
-        const title = document.querySelector('meta[name="title"]')?.content || document.title.split(" - YouTube")[0];
         
+        // --- BAŞLIK ALMA YÖNTEMİ GÜNCELLENDİ ---
+        
+        let title = "";
+
+        // 1. Yöntem: Sayfanın GÖVDESİNDEKİ H1 başlığını bul (SPA için en güvenilir olan budur)
+        // YouTube'un kullandığı güncel başlık seçicisi budur
+        const titleElement = document.querySelector("h1.ytd-video-primary-info-renderer yt-formatted-string");
+        
+        if (titleElement && titleElement.textContent) {
+          title = titleElement.textContent;
+        } 
+        
+        // 2. Yöntem (Eski Yöntem): Eğer H1 bulunamazsa, HEAD içindeki meta etiketini ara
+        if (!title) {
+          title = document.querySelector('meta[name="title"]')?.content;
+        }
+        
+        // 3. Yöntem (Son Çare): Sayfanın sekme başlığını kullan
+        if (!title) {
+          title = document.title.split(" - YouTube")[0];
+        }
+        
+        // ------------------------------------------
+
         // Video elementini bul
         const videoElement = document.querySelector('video');
         

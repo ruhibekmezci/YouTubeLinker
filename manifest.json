@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "YouTube Başlık ve Süre Kopyala",
-  "version": "1.3",
-  "description": "Açık olan YouTube videosunun başlığını ve süresini formatlayıp panoya kopyalar.",
+  "version": "1.5",
+  "description": "YouTube videolarından zaman damgalı linkler kopyalar veya QR kod oluşturur.",
   "permissions": [
     "clipboardWrite",
     "tabs"
