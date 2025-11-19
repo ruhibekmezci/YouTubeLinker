@@ -2,13 +2,11 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    
     <script src="qrcode.min.js"></script>
-    
     <style>
         body {
             font-family: Arial, sans-serif;
-            width: 340px; /* Butonlar sığsın diye biraz daha genişlettik */
+            width: 350px;
             padding: 10px;
             background-color: #f4f4f4;
             text-align: center;
@@ -27,27 +25,28 @@
         .success { color: #006400; font-weight: bold; }
         .error { color: #D8000C; }
         
+        /* Izgara (Grid) yapısı: 2 satır, 2 sütun */
         .button-group {
-            display: flex;
-            gap: 5px; /* Butonlar arası boşluk */
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
         }
         button {
-            padding: 10px 5px; /* Yanlardan biraz kıstık */
+            padding: 10px 5px;
             font-size: 13px;
             border: none;
             border-radius: 4px;
             cursor: pointer;
             color: white;
-            flex: 1; /* Hepsi eşit genişlikte */
             font-weight: bold;
         }
         button:hover { opacity: 0.85; }
         button:disabled { background-color: #ccc; cursor: not-allowed; }
 
-        /* Renk Kodları */
         #copyButton { background-color: #007bff; } /* Mavi */
         #qrButton { background-color: #4CAF50; }   /* Yeşil */
-        #shotButton { background-color: #E91E63; } /* Pembe/Kırmızı */
+        #shotButton { background-color: #E91E63; } /* Pembe */
+        #noteButton { background-color: #ff9800; color: black;} /* Turuncu */
 
     </style>
 </head>
@@ -58,8 +57,9 @@
 
     <div class="button-group">
         <button id="copyButton" disabled>Link Kopyala</button>
-        <button id="qrButton" disabled>QR Kod</button>
         <button id="shotButton" disabled>📸 Resim Çek</button>
+        <button id="qrButton" disabled>QR Kod</button>
+        <button id="noteButton" disabled>📌 Not Ekle</button>
     </div>
 
     <div id="qrcode-container" style="display: none;"></div>

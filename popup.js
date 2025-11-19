@@ -1,7 +1,6 @@
-// popup.js
+// popup.js (V1.7 - Not Ekleme Özellikli)
 
-// --- Yardımcı Fonksiyonlar ---
-
+// --- Yardımcılar ---
 function formatTime(totalSeconds) {
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = Math.floor(totalSeconds % 60);
@@ -21,7 +20,6 @@ async function copyRichText(text, url, statusElement) {
     statusElement.innerHTML = '<span class="success">Link olarak kopyalandı!</span>';
   } catch (err) {
     statusElement.textContent = 'Hata: Link kopyalanamadı.';
-    console.error('Kopyalama hatası: ', err);
   }
 }
 
@@ -35,72 +33,54 @@ async function generateAndCopyQR(url, statusElement) {
   const qrContainer = document.getElementById('qrcode-container');
   qrContainer.innerHTML = '';
   statusElement.textContent = 'QR kod oluşturuluyor...';
-
   try {
-    new QRCode(qrContainer, {
-      text: url,
-      width: 256,
-      height: 256,
-      correctLevel: QRCode.CorrectLevel.H
-    });
-
+    new QRCode(qrContainer, { text: url, width: 256, height: 256, correctLevel: QRCode.CorrectLevel.H });
     setTimeout(async () => {
       const canvas = qrContainer.querySelector('canvas');
       if (!canvas) { statusElement.textContent = 'Hata: QR canvas bulunamadı.'; return; }
-      
       canvas.toBlob(async (blob) => {
         try {
           const item = new ClipboardItem({ 'image/png': blob });
           await navigator.clipboard.write([item]);
           statusElement.innerHTML = '<span class="success">QR Kod kopyalandı!</span>';
-        } catch (copyErr) {
-          statusElement.textContent = 'Hata: QR kopyalanamadı.';
-        }
+        } catch (copyErr) { statusElement.textContent = 'Hata: Pano işlemi başarısız.'; }
       }, 'image/png', 1.0);
     }, 100);
-
-  } catch (qrErr) {
-    statusElement.textContent = 'Hata: QR oluşturulamadı.';
-  }
+  } catch (qrErr) { statusElement.textContent = 'Hata: QR oluşturulamadı.'; }
 }
 
-// --- YENİ: EKRAN GÖRÜNTÜSÜ İŞLEYİCİSİ ---
 async function handleScreenshot(tabId, statusElement) {
   statusElement.textContent = 'Resim alınıyor...';
-  
   chrome.tabs.sendMessage(tabId, { action: "captureScreenshot" }, async (response) => {
     if (chrome.runtime.lastError || !response || response.error) {
-      statusElement.textContent = 'Hata: Resim alınamadı.';
-      console.error(chrome.runtime.lastError?.message || response?.error);
-      return;
+      statusElement.textContent = 'Hata: Resim alınamadı.'; return;
     }
-
     if (response.dataUrl) {
       try {
-        // Base64 verisini Blob'a çevirmemiz lazım
         const res = await fetch(response.dataUrl);
         const blob = await res.blob();
-        
-        // Panoya resim olarak kopyala
         const item = new ClipboardItem({ 'image/png': blob });
         await navigator.clipboard.write([item]);
-        
-        statusElement.innerHTML = '<span class="success">Resim kopyalandı!</span><br><small>(Ctrl+V ile yapıştır)</small>';
-      } catch (err) {
-        statusElement.textContent = 'Hata: Pano işlemi başarısız.';
-        console.error(err);
-      }
+        statusElement.innerHTML = '<span class="success">Resim kopyalandı!</span>';
+      } catch (err) { statusElement.textContent = 'Hata: Pano hatası.'; }
     }
   });
 }
 
+// YENİ: Not Ekleme İşleyicisi
+function handleAddNote(tabId, statusElement) {
+  chrome.tabs.sendMessage(tabId, { action: "addNote" });
+  // Pencereyi kapatmaya gerek yok ama kullanıcıya bilgi verelim
+  statusElement.innerHTML = 'Not kutusu açıldı.<br><small>(Video sayfasına bakın)</small>';
+}
 
-// --- Ana Çalışma Mantığı ---
+// --- Ana Mantık ---
 document.addEventListener('DOMContentLoaded', () => {
   const statusElement = document.getElementById('status');
   const copyButton = document.getElementById('copyButton');
   const qrButton = document.getElementById('qrButton');
-  const shotButton = document.getElementById('shotButton'); // Yeni buton
+  const shotButton = document.getElementById('shotButton');
+  const noteButton = document.getElementById('noteButton'); // Yeni buton
 
   chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
     if (!tabs || tabs.length === 0) { statusElement.textContent = 'Hata: Sekme yok.'; return; }
@@ -108,25 +88,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const activeTab = tabs[0];
     const url = activeTab.url;
 
-    if (!isValidYouTubeVideoUrl(url)) {
-      statusElement.textContent = 'Hata: YouTube sayfası değil.';
-      return;
-    }
+    if (!isValidYouTubeVideoUrl(url)) { statusElement.textContent = 'Hata: YouTube değil.'; return; }
 
-    // Video detaylarını al
     chrome.tabs.sendMessage(activeTab.id, { action: "getVideoDetails" }, (response) => {
-        
         if (chrome.runtime.lastError || !response) {
-          statusElement.textContent = 'Bağlantı kurulamadı (Sayfayı Yenile)';
-          return;
+          statusElement.textContent = 'Bağlantı kurulamadı (Sayfayı Yenile)'; return;
         } 
         
         if (response.title) {
-          // --- Veriler Hazır ---
           const title = response.title;
           const currentTime = response.currentTime;
           let baseUrl = response.videoUrl;
-
           const timeString = formatTime(currentTime);
           const timeInSeconds = Math.floor(currentTime);
           
@@ -138,22 +110,20 @@ document.addEventListener('DOMContentLoaded', () => {
           const formattedText = `"${title}" dakika: ${timeString}`;
           const timestampedUrl = `${baseUrl}&t=${timeInSeconds}s`;
 
-          // Durumu güncelle ve butonları aç
           statusElement.innerHTML = '<span class="success">Hazır!</span> İşlem seçin:';
           copyButton.disabled = false;
           qrButton.disabled = false;
           shotButton.disabled = false;
+          noteButton.disabled = false;
 
-          // Buton Olayları
           copyButton.addEventListener('click', () => copyRichText(formattedText, timestampedUrl, statusElement));
           qrButton.addEventListener('click', () => generateAndCopyQR(timestampedUrl, statusElement));
-          
-          // Yeni Screenshot butonu
           shotButton.addEventListener('click', () => handleScreenshot(activeTab.id, statusElement));
+          
+          // Not butonu
+          noteButton.addEventListener('click', () => handleAddNote(activeTab.id, statusElement));
 
-        } else {
-          statusElement.textContent = 'Video bulunamadı.';
-        }
+        } else { statusElement.textContent = 'Video bulunamadı.'; }
     });
   });
 });
