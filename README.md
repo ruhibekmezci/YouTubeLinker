@@ -1,66 +1,115 @@
-# YouTube Timestamp Linker & Personal Assistant 🚀
+# 📺 YouTube Linker & Study Assistant
 
-A powerful, all-in-one Chrome extension that transforms how you interact with YouTube videos. 
+<div align="center">
 
-It's not just a link copier; it's a **productivity tool**. Copy timestamped links, generate QR codes, capture clean screenshots, and **pin personal notes** directly onto the video progress bar.
+<img width="922" height="230" alt="b825cb25-9c75-43a8-a7e5-c16e81f2cc76" src="https://github.com/user-attachments/assets/1b306324-bda2-400c-88b5-8365904407db" />
+
+**The ultimate productivity tool for YouTube learners, researchers, and power users.**
+
+[Features](#-features) • [Installation](#-installation) • [Usage](#-usage) • [Library](#-library)
+
+![Chrome](https://img.shields.io/badge/Chrome-Extension-googlechrome?style=flat&logo=google-chrome)
+![Manifest](https://img.shields.io/badge/Manifest-V3-blue)
+![JavaScript](https://img.shields.io/badge/JavaScript-ES6+-yellow)
+
+</div>
+
+---
+
+## 💡 What is it?
+
+**YouTube Linker** is not just a link copier. It transforms YouTube into a **personal study station**. 
+
+It allows you to **pin notes** directly onto the video timeline, capture clean **screenshots** of specific frames, generate **QR codes** for mobile sharing, and manage everything in a searchable **Local Library**.
+
+No accounts needed. No cloud sync. **100% Local & Private.**
+
+---
 
 ## ✨ Key Features
 
-### 1. 📝 Personal Video Notes (New!)
-Turn YouTube into your study notebook.
-* **Pin Notes:** Add personal notes to specific timestamps. A visual **yellow marker** appears on the progress bar.
-* **Hover to Read:** Hover over markers to see your notes in a tooltip.
-* **Click to Jump:** Click a marker to instantly jump to that moment.
-* **Edit/Delete:** Right-click any marker to edit the text or delete the note.
-* **Local Storage:** Notes are saved securely in your browser and reappear whenever you revisit the video.
+<img width="961" height="617" alt="image" src="https://github.com/user-attachments/assets/a367f583-ede5-4ac7-81bd-b3106fca3747" />
+
+
+### 1. 📝 Timeline Notes (The "Sticky Note" Feature)
+Don't just watch; interact. Press `Alt + A` to pin a note to the exact second you are watching.
+* **Visual Markers:** Yellow markers appear on the progress bar.
+* **Hover Preview:** Hover over markers to read your notes instantly.
+* **Edit/Delete:** Right-click any marker to modify.
+
+![Timelinenotes3](https://github.com/user-attachments/assets/6495726c-871a-4c8c-a30c-c0a6babcf323)
 
 ### 2. 🔗 Smart Link Copy
-Copies links that work perfectly everywhere.
-* **Rich Text:** Pastes as a clickable hyperlink in Word, Notion, Google Docs.
-* **Plain Text:** Pastes as text + URL in WhatsApp, Discord, Notepad.
+Solves the "WhatsApp vs. Word" problem.
+* **Rich Text:** Pastes as a clickable hyperlink in **Notion, Word, Google Docs**.
+* **Plain Text:** Pastes as `Title + URL` in **WhatsApp, Discord, VS Code**.
+* 
+![smartlinkcopy](https://github.com/user-attachments/assets/2d5d54fc-32bc-4349-aa6f-0d054f89f0a7)
 
-### 3. 📸 Instant Screenshot
-Captures a high-quality, clean screenshot of the exact video frame (without player controls/overlays) and copies it to your clipboard.
+### 3. 📸 Intelligent Screenshot
+Captures the raw video frame without the player controls (play button, progress bar, gradients).
+* **Auto-Save:** If you take a screenshot (`Alt+S`) and immediately add a note (`Alt+A`), the image is **attached to your note** automatically!
 
-### 4. 📱 QR Code Generator
-Instantly generates a QR code for the specific timestamp to share easily with mobile devices.
+![screenshot](https://github.com/user-attachments/assets/25bf91c0-2557-443b-806b-e6b599f2f5c4)
 
-### 5. ⌨️ Keyboard Shortcuts
-Control everything without touching your mouse:
+
+### 4. 📚 The Library (Options Page)
+A powerful dashboard to manage your knowledge.
+* **Search:** Filter by video title, note content, or descriptions.
+* **Detailed Descriptions:** Add expandable/collapsible detailed notes (up to 250 chars) for every timestamp.
+* **Visual Gallery:** View your attached screenshots directly in the list.
+
+![optionspage1](https://github.com/user-attachments/assets/d4360277-eb4f-401d-9710-beb6cb7640b5)
+![optionspage2](https://github.com/user-attachments/assets/607b8df0-04f1-435f-8327-b1fe95bd98c3)
+
+### 5. 📱 QR Code Generator
+Instantly generate a QR code for the current timestamp to continue watching on your phone.
+
+![qrcodegenerate](https://github.com/user-attachments/assets/c5e5d947-79dc-4a5d-924f-2c71d0a67d40)
+
+
+## 🚀 Keyboard Shortcuts (Hotkeys)
+
+Master the extension without touching your mouse:
 
 | Shortcut | Action | Description |
 | :--- | :--- | :--- |
-| **`Alt + A`** | **Add Note** | Opens a prompt to pin a note at the current time. |
-| **`Alt + C`** | **Copy Link** | Copies formatted link to clipboard. |
-| **`Alt + S`** | **Screenshot** | Copies a clean PNG image frame to clipboard. |
-| **`Alt + Q`** | **QR Code** | Copies a QR code image to clipboard. |
+| **`Alt + A`** | **Add Note** | Pins a note to the current timestamp. |
+| **`Alt + C`** | **Copy Link** | Copies smart link to clipboard. |
+| **`Alt + S`** | **Screenshot** | Copies clean frame to clipboard & memory. |
+| **`Alt + Q`** | **QR Code** | Copies QR image to clipboard. |
 
-## 🔧 Installation (Sideloading)
+---
 
-Since this extension is not on the Chrome Web Store, you need to load it manually.
+## 🔧 Installation
 
-1.  **Download the Project:** Clone or download this repository.
-2.  **Download the Library:**
+Since this is a powerful developer tool, it is installed via "Developer Mode".
+
+1.  **Clone the Repository:**
+    ```bash
+    git clone [https://github.com/USERNAME/YouTubeLinker.git](https://github.com/USERNAME/YouTubeLinker.git)
+    ```
+2.  **Download Dependency:**
     * Download `qrcode.min.js` from [cdnjs](https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js).
-    * Save it **directly inside** your project folder (next to `manifest.json`).
+    * Place it **inside the project folder** (same level as `manifest.json`).
 3.  **Load in Chrome:**
     * Go to `chrome://extensions`.
-    * Enable **"Developer mode"** (top-right).
-    * Click **"Load unpacked"** (top-left).
-    * Select your project folder.
+    * Enable **Developer mode** (top right).
+    * Click **Load unpacked**.
+    * Select the project folder.
 
-## 🚀 How to Use Notes
+---
 
-1.  Watch a video and pause at an important moment.
-2.  Press **`Alt + A`** (or click "📌 Not Ekle" in the popup).
-3.  Type your note and hit Enter.
-4.  A **yellow marker** will appear on the timeline.
-5.  **Right-Click** the marker later to Edit or Delete it.
+## 📂 Data & Privacy
 
-## 💻 Technology Used
+* **Storage:** All data (notes, images, links) is stored in your browser's `Local Storage`.
+* **Unlimited Storage:** The extension uses the `unlimitedStorage` permission to save high-quality screenshots and thousands of notes.
+* **Privacy:** No data is sent to any external server. It stays on your machine.
 
-* **Chrome Storage API:** For saving your notes locally.
-* **Canvas API:** For capturing video frames.
-* **Clipboard API:** For smart copying (HTML/Text/Images).
-* **DOM Manipulation:** For injecting markers into the YouTube player.
-* **Manifest V3**
+---
+
+## 🤝 Contributing
+
+Feel free to open issues or pull requests if you have ideas to make this assistant even smarter!
+
+**Developed with ❤️ for productive learning.**
