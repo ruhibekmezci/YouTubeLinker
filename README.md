@@ -6,7 +6,7 @@
 
 **The ultimate productivity tool for YouTube learners, researchers, and power users.**
 
-[Features](#-features) • [Installation](#-installation) • [Usage](#-usage) • [Library](#-library)
+[Features](#-key-features) • [Installation](#-installation) • [Usage](#-keyboard-shortcuts-hotkeys)
 
 ![Chrome](https://img.shields.io/badge/Chrome-Extension-googlechrome?style=flat&logo=google-chrome)
 ![Manifest](https://img.shields.io/badge/Manifest-V3-blue)
