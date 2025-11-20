@@ -1,8 +1,13 @@
 # 📺 YouTube Linker & Study Assistant
 
-<div align="center">
-
-<img width="922" height="230" alt="b825cb25-9c75-43a8-a7e5-c16e81f2cc76" src="https://github.com/user-attachments/assets/1b306324-bda2-400c-88b5-8365904407db" />
+<p align="center">
+  <span style="display: inline-block; margin-right: 10px;">
+    <img width="512" height="286" src="https://github.com/user-attachments/assets/d537397f-3dae-42b4-a239-4b9ecf7d8cca" />
+  </span>
+  <span style="display: inline-block;">
+    <img width="512" height="286" src="https://github.com/user-attachments/assets/61ae7806-4e5b-4260-892b-108e1d591cf7" />
+  </span>
+</p>
 
 **The ultimate productivity tool for YouTube learners, researchers, and power users.**
 
