@@ -1,12 +1,13 @@
 {
   "manifest_version": 3,
   "name": "YouTube Başlık ve Süre Kopyala",
-  "version": "1.7",
-  "description": "YouTube videolarından link kopyalar, ekran görüntüsü alır, QR kod oluşturur ve zaman damgalı notlar ekler.",
+  "version": "2.1",
+  "description": "YouTube notları, link kopyalama, sınırsız görsel kütüphane ve detaylı açıklamalar.",
   "permissions": [
     "clipboardWrite",
     "tabs",
-    "storage"
+    "storage",
+    "unlimitedStorage"
   ],
   "content_scripts": [
     {
@@ -27,6 +28,10 @@
   "action": {
     "default_popup": "popup.html",
     "default_icon": "icon.png"
+  },
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": true
   },
   "icons": {
     "128": "icon.png"

@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>YouTube Video Notları - Kütüphane</title>
+    <style>
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background-color: #f9f9f9; 
+            color: #333; 
+            max-width: 900px; 
+            margin: 40px auto; 
+            padding: 20px; 
+        }
+        h1 { 
+            text-align: center; 
+            color: #cc0000; 
+            border-bottom: 2px solid #ddd; 
+            padding-bottom: 20px; 
+            margin-bottom: 20px; 
+        }
+        
+        /* ARAMA ÇUBUĞU */
+        .search-container { 
+            text-align: center; 
+            margin-bottom: 20px; 
+        }
+        #search-input { 
+            width: 100%; 
+            max-width: 500px; 
+            padding: 12px 20px; 
+            font-size: 16px; 
+            border: 2px solid #ddd; 
+            border-radius: 25px; 
+            outline: none; 
+            transition: border-color 0.3s, box-shadow 0.3s; 
+        }
+        #search-input:focus { 
+            border-color: #cc0000; 
+            box-shadow: 0 0 8px rgba(204, 0, 0, 0.2); 
+        }
+
+        /* VİDEO KARTLARI */
+        .video-block { 
+            background: #fff; 
+            border: 1px solid #e0e0e0; 
+            border-radius: 8px; 
+            padding: 20px; 
+            margin-bottom: 25px; 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05); 
+            transition: transform 0.2s; 
+        }
+        .video-block:hover { 
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1); 
+        }
+        .video-header { 
+            font-size: 18px; 
+            margin-bottom: 15px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+        }
+        .video-link { 
+            text-decoration: none; 
+            color: #065fd4; 
+            font-weight: bold; 
+        }
+        .video-link:hover { 
+            text-decoration: underline; 
+        }
+        
+        /* NOT LİSTESİ */
+        .note-list { 
+            list-style: none; 
+            padding: 0; 
+            margin: 0; 
+        }
+        .note-item { 
+            padding: 12px 15px; 
+            border-bottom: 1px solid #f0f0f0; 
+            display: flex; 
+            flex-direction: column; /* Alt alta dizilim */
+            gap: 5px; 
+        }
+        .note-item:last-child { 
+            border-bottom: none; 
+        }
+        
+        /* ÜST SATIR (Zaman - Metin - İkonlar) */
+        .note-header-row {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            width: 100%;
+        }
+        
+        .timestamp-link { 
+            color: #fff; 
+            background-color: #555; 
+            padding: 2px 8px; 
+            border-radius: 4px; 
+            text-decoration: none; 
+            font-size: 12px; 
+            font-weight: bold; 
+            min-width: 50px; 
+            text-align: center; 
+            display: inline-block; 
+            flex-shrink: 0; 
+        }
+        .timestamp-link:hover { 
+            background-color: #cc0000; 
+        }
+        
+        .note-content { 
+            flex-grow: 1; 
+            display: flex; 
+            align-items: center; 
+            gap: 10px; 
+            flex-wrap: wrap;
+        }
+        .note-text { 
+            font-size: 16px; 
+            color: #333; 
+        }
+        
+        /* RESİM STİLLERİ */
+        .note-image { 
+            max-width: 200px; 
+            max-height: 120px; 
+            border-radius: 4px; 
+            border: 1px solid #ddd; 
+            cursor: pointer; 
+            transition: transform 0.2s; 
+            display: block; 
+        }
+        .note-image:hover { 
+            transform: scale(1.05); 
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2); 
+        }
+
+        /* AÇIKLAMA BUTONU (KALEM İKONU) */
+        .btn-toggle-desc {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 18px;
+            color: #ccc; /* Varsayılan Gri */
+            padding: 5px;
+            border-radius: 50%;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .btn-toggle-desc:hover {
+            background-color: #eee;
+            color: #666;
+        }
+        /* Doluysa Turuncu */
+        .btn-toggle-desc.has-content {
+            color: #ff9800;
+        }
+        /* Açıksa Mavi */
+        .btn-toggle-desc.active {
+            color: #007bff;
+            background-color: #e9f5ff;
+        }
+
+        /* GİZLİ AÇIKLAMA KUTUSU */
+        .note-description {
+            display: none; /* Başlangıçta GİZLİ */
+            width: 96%;
+            height: 60px;
+            margin-top: 5px;
+            padding: 10px;
+            font-size: 14px;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            background-color: #fcfcfc;
+            color: #555;
+            resize: vertical;
+            font-family: 'Segoe UI', sans-serif;
+        }
+        .note-description:focus {
+            border-color: #bbb;
+            background-color: #fff;
+            outline: none;
+        }
+
+        /* DİĞERLERİ */
+        .no-notes { text-align: center; color: #777; margin-top: 50px; font-size: 18px; }
+        .btn-delete { background-color: #fff; border: 1px solid #ddd; color: #777; padding: 5px 10px; cursor: pointer; border-radius: 4px; font-size: 12px; }
+        .btn-delete:hover { background-color: #ffebeb; color: red; border-color: red; }
+        #no-result-msg { text-align: center; color: #999; display: none; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <h1>📚 Video Notları Kütüphanem</h1>
+    
+    <div id="storage-info" style="text-align:center; margin-bottom:10px; font-weight:bold; color:#666; font-size: 12px;"></div>
+    
+    <div class="search-container">
+        <input type="text" id="search-input" placeholder="🔍 Video başlığı, not veya açıklamalarda ara...">
+    </div>
+
+    <div id="library-container">
+        <div class="no-notes">Henüz kaydedilmiş not yok...</div>
+    </div>
+    
+    <div id="no-result-msg">Aradığınız kriterlere uygun not bulunamadı.</div>
+
+    <script src="options.js"></script>
+</body>
+</html>
