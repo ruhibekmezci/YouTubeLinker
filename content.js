@@ -47,7 +47,13 @@ function formatTime(totalSeconds) {
 
 function getVideoID() {
   const urlParams = new URLSearchParams(window.location.search);
-  return urlParams.get('v');
+  let id = urlParams.get('v');
+  if (id) return id;
+
+  const match = window.location.href.match(/\/shorts\/([a-zA-Z0-9_-]{11})/);
+  if (match) return match[1];
+
+  return null;
 }
 
 function getVideoData() {
