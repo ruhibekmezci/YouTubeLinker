@@ -40,14 +40,25 @@ function showNotification(message, type = "success") {
 }
 
 function formatTime(totalSeconds) {
-  const minutes = Math.floor(totalSeconds / 60);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
   const seconds = Math.floor(totalSeconds % 60);
+
+  if (hours > 0) {
+    return `${hours}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+  }
   return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 }
 
 function getVideoID() {
   const urlParams = new URLSearchParams(window.location.search);
-  return urlParams.get('v');
+  let id = urlParams.get('v');
+  if (id) return id;
+
+  const match = window.location.href.match(/\/shorts\/([a-zA-Z0-9_-]{11})/);
+  if (match) return match[1];
+
+  return null;
 }
 
 function getVideoData() {
