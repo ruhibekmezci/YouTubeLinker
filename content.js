@@ -1,4 +1,4 @@
-// content.js (V2.0 - Sıkıştırılmış Görsel Notlar)
+// content.js (V2.4 - Native Time Teleport)
 
 // --- CSS STİLLERİ ---
 const styles = `
@@ -8,11 +8,26 @@ const styles = `
     box-shadow: 1px 0 2px rgba(0,0,0,0.5); transition: transform 0.1s;
   }
   .yt-linker-marker:hover { transform: scaleY(1.5); background-color: #FF4500; }
+  
   #yt-linker-tooltip {
     position: absolute; background: rgba(0,0,0,0.9); color: white; padding: 8px 12px;
     border-radius: 4px; font-size: 13px; font-family: Roboto, Arial; pointer-events: none;
     z-index: 10000; white-space: nowrap; box-shadow: 0 2px 10px rgba(0,0,0,0.5);
     border: 1px solid #444; display: none;
+  }
+
+  /* YENİ: Native Input Stili */
+  .yt-linker-native-input {
+    background: #333;
+    color: #fff;
+    border: 1px solid #3ea6ff;
+    border-radius: 2px;
+    padding: 0 4px;
+    font-family: "Roboto", "Arial", sans-serif;
+    font-size: 100%; /* YouTube font boyutuyla aynı olsun */
+    width: 60px;
+    outline: none;
+    line-height: normal;
   }
 `;
 const styleSheet = document.createElement("style");
@@ -45,14 +60,27 @@ function formatTime(totalSeconds) {
   return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 }
 
+function parseInputTime(input) {
+    if (!input) return null;
+    // Boşlukları temizle ve : işaretine göre böl
+    const parts = input.trim().split(':').map(Number);
+    let seconds = 0;
+    
+    if (parts.some(isNaN)) return null; 
+
+    if (parts.length === 1) { seconds = parts[0]; } // Sadece saniye (örn: 90)
+    else if (parts.length === 2) { seconds = parts[0] * 60 + parts[1]; } // dk:sn
+    else if (parts.length === 3) { seconds = parts[0] * 3600 + parts[1] * 60 + parts[2]; } // sa:dk:sn
+    
+    return seconds;
+}
+
 function getVideoID() {
   const urlParams = new URLSearchParams(window.location.search);
   let id = urlParams.get('v');
   if (id) return id;
-
   const match = window.location.href.match(/\/shorts\/([a-zA-Z0-9_-]{11})/);
   if (match) return match[1];
-
   return null;
 }
 
@@ -76,32 +104,92 @@ function getVideoData() {
   } catch (e) { return null; }
 }
 
-// --- GÖRÜNTÜ İŞLEME FONKSİYONU (YENİ) ---
 function compressImage(videoElement) {
-    // Orijinal boyutlar
     let width = videoElement.videoWidth;
     let height = videoElement.videoHeight;
-    
-    // Eğer video 4K veya çok büyükse, not için küçültelim (Maks genişlik 800px yeterli)
-    // Bu işlem dosya boyutunu %90 azaltır!
     const MAX_WIDTH = 800;
     if (width > MAX_WIDTH) {
         const scaleFactor = MAX_WIDTH / width;
         width = MAX_WIDTH;
         height = height * scaleFactor;
     }
-
     const canvas = document.createElement("canvas");
-    canvas.width = width;
-    canvas.height = height;
+    canvas.width = width; canvas.height = height;
     const ctx = canvas.getContext("2d");
     ctx.drawImage(videoElement, 0, 0, width, height);
-
-    // JPEG formatında, 0.6 (orta) kalitede kaydet
     return canvas.toDataURL("image/jpeg", 0.6);
 }
 
-// --- NOT SİSTEMİ ---
+// --- YENİ: NATIVE TIME EDITOR (SAĞ TIK IŞINLANMA) ---
+function enableNativeTimeEditing() {
+    // Süre elementini bul (YouTube player'daki sol alt 'Current Time' yazısı)
+    const timeCurrentElement = document.querySelector('.ytp-time-current');
+    
+    // Element yoksa veya zaten dinleyici eklediysek çık
+    if (!timeCurrentElement || timeCurrentElement.classList.contains('yt-linker-editable')) return;
+
+    // İşaretle ki tekrar tekrar dinleyici eklemeyelim
+    timeCurrentElement.classList.add('yt-linker-editable');
+    timeCurrentElement.title = "Sağ Tık: Manuel Süre Gir"; // İpucu
+
+    // SAĞ TIK (Context Menu) Dinleyicisi
+    timeCurrentElement.addEventListener('contextmenu', (e) => {
+        e.preventDefault(); // Tarayıcının sağ tık menüsünü engelle
+        e.stopPropagation();
+
+        const parent = timeCurrentElement.parentElement;
+        const currentText = timeCurrentElement.textContent;
+
+        // 1. Orijinal yazıyı gizle
+        timeCurrentElement.style.display = 'none';
+
+        // 2. Input oluştur
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.value = currentText;
+        input.className = 'yt-linker-native-input';
+        
+        // 3. Inputu orijinal yazının hemen önüne ekle
+        parent.insertBefore(input, timeCurrentElement);
+        input.focus();
+        input.select(); // İçindeki yazıyı seç ki hemen yazabilsin
+
+        // Fonksiyon: Temizlik ve Geri Dönüş
+        const cleanup = () => {
+            input.remove();
+            timeCurrentElement.style.display = ''; // Orijinal yazıyı geri getir
+        };
+
+        // 4. Tuş Dinleyicisi (Enter)
+        input.addEventListener('keydown', (ev) => {
+            if (ev.key === 'Enter') {
+                ev.preventDefault();
+                const seconds = parseInputTime(input.value);
+                const video = document.querySelector('video');
+
+                if (seconds !== null && video) {
+                    if (seconds <= video.duration) {
+                        video.currentTime = seconds;
+                        showNotification(`🚀 Işınlandı: ${input.value}`);
+                    } else {
+                        showNotification("❌ Süre video uzunluğunu aşıyor!", "error");
+                    }
+                }
+                cleanup();
+            }
+            if (ev.key === 'Escape') {
+                cleanup(); // İptal et
+            }
+            ev.stopPropagation(); // Video kısayollarını engelle
+        });
+
+        // 5. Odak kaybolursa (Blur) iptal et
+        input.addEventListener('blur', cleanup);
+    });
+}
+
+
+// --- NOT SİSTEMİ (Mevcut) ---
 function loadAndRenderMarkers() {
   const videoID = getVideoID(); if (!videoID) return;
   document.querySelectorAll('.yt-linker-marker').forEach(el => el.remove());
@@ -141,7 +229,6 @@ function loadAndRenderMarkers() {
         const newText = prompt("Notu düzenle:", note.text);
         if (newText !== null) { updateOrDeleteNote(videoID, note.time, newText); }
       });
-
       progressBar.appendChild(marker);
     });
   });
@@ -173,33 +260,23 @@ function saveNote() {
   const videoData = getVideoData(); 
   const videoID = getVideoID();
   if (!videoData || !videoID) { showNotification("❌ Video bulunamadı!", "error"); return; }
-
   const videoElement = document.querySelector('video');
   const currentTime = videoElement.currentTime;
   videoElement.pause(); 
-
   const noteText = prompt(`Bu saniye (${formatTime(currentTime)}) için notunuz:`);
-
   if (noteText) {
     chrome.storage.local.get([videoID], (result) => {
       let data = result[videoID];
       let notes = [];
       if (Array.isArray(data)) notes = data; 
       else if (data) notes = data.notes;
-
       const newNote = { time: currentTime, text: noteText };
-      if (latestScreenshot) {
-          newNote.image = latestScreenshot;
-          latestScreenshot = null;
-      }
+      if (latestScreenshot) { newNote.image = latestScreenshot; latestScreenshot = null; }
       notes.push(newNote);
-      
       const saveData = { title: videoData.title, url: videoData.baseUrl, notes: notes };
-
       chrome.storage.local.set({ [videoID]: saveData }, () => {
         const msg = newNote.image ? "✅ Not + Resim Kaydedildi!" : "✅ Not Kaydedildi!";
-        showNotification(msg);
-        loadAndRenderMarkers();
+        showNotification(msg); loadAndRenderMarkers();
       });
     });
   }
@@ -208,27 +285,13 @@ function saveNote() {
 
 // --- CORE FONKSİYONLAR ---
 async function performCopyLink() { const d=getVideoData(); if(!d)return; const t=formatTime(d.currentTime);const url=`${d.baseUrl}&t=${Math.floor(d.currentTime)}s`;const txt=`"${d.title}" dakika: ${t}`;const h=`<a href="${url}">${txt}</a>`;const p=`${txt}\n${url}`;await navigator.clipboard.write([new ClipboardItem({'text/html':new Blob([h],{type:'text/html'}),'text/plain':new Blob([p],{type:'text/plain'})})]);showNotification("✅ Link Kopyalandı!");}
-
 async function performScreenshot() {
-  const v = document.querySelector('video');
-  if (!v) return;
-  
-  // 1. Tam kaliteyi panoya kopyalamak için (Canvas)
-  const c = document.createElement("canvas");
-  c.width = v.videoWidth; c.height = v.videoHeight;
-  const ctx = c.getContext("2d");
-  ctx.drawImage(v, 0, 0);
-  
-  c.toBlob(async(b)=>{
-    await navigator.clipboard.write([new ClipboardItem({'image/png':b})]);
-    showNotification("📸 Ekran Görüntüsü Kopyalandı!");
-  },'image/png');
-
-  // 2. Notlar için SIKIŞTIRILMIŞ veriyi hafızaya al (JPEG + Resize)
-  // Bu fonksiyon yukarıda tanımladığımız yeni fonksiyon
+  const v = document.querySelector('video'); if (!v) return;
+  const c = document.createElement("canvas"); c.width = v.videoWidth; c.height = v.videoHeight;
+  const ctx = c.getContext("2d"); ctx.drawImage(v, 0, 0);
+  c.toBlob(async(b)=>{ await navigator.clipboard.write([new ClipboardItem({'image/png':b})]); showNotification("📸 Ekran Görüntüsü Kopyalandı!"); },'image/png');
   latestScreenshot = compressImage(v); 
 }
-
 async function performGenQR() { const d=getVideoData();if(!d)return;const u=`${d.baseUrl}&t=${Math.floor(d.currentTime)}s`;const t=document.createElement("div");t.style.position="absolute";t.style.left="-9999px";document.body.appendChild(t);new QRCode(t,{text:u,width:256,height:256,correctLevel:QRCode.CorrectLevel.H});setTimeout(()=>{const c=t.querySelector("canvas");if(c)c.toBlob(async(b)=>{await navigator.clipboard.write([new ClipboardItem({'image/png':b})]);showNotification("📱 QR Kod Kopyalandı!");t.remove();});},100);}
 
 // --- LISTENERS ---
@@ -244,20 +307,28 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     else if (request.action === "captureScreenshot") { 
         const v = document.querySelector('video'); 
         if(v){
-            // Popup'a gönderirken de sıkıştırılmış yollayabiliriz ama 
-            // popup'ta net görünmesi için full kalite yollayalım
             const c=document.createElement("canvas");c.width=v.videoWidth;c.height=v.videoHeight;c.getContext("2d").drawImage(v,0,0);
-            const fullData = c.toDataURL("image/png");
-            
-            // Ama not için hafızaya sıkıştırılmış alalım
-            latestScreenshot = compressImage(v);
-            
-            sendResponse({dataUrl: fullData});
+            const fullData = c.toDataURL("image/png"); latestScreenshot = compressImage(v); sendResponse({dataUrl: fullData});
         }
     }
     else if (request.action === "addNote") { saveNote(); }
     return true;
 });
+
+// --- DÖNGÜ VE GÖZLEMCİLER ---
 let lastUrl = location.href; 
-new MutationObserver(() => { const url = location.href; if (url !== lastUrl) { lastUrl = url; setTimeout(loadAndRenderMarkers, 2000); } }).observe(document, {subtree: true, childList: true});
-setTimeout(loadAndRenderMarkers, 2000);
+const observer = new MutationObserver(() => {
+  const url = location.href;
+  if (url !== lastUrl) { lastUrl = url; setTimeout(loadAndRenderMarkers, 2000); }
+  
+  // Sürekli kontrol et, çünkü YouTube arayüzü dinamiktir.
+  // Native Time Edit özelliğini ekle/kontrol et.
+  enableNativeTimeEditing();
+});
+observer.observe(document.body, {subtree: true, childList: true});
+
+// İlk açılış
+setTimeout(() => {
+    loadAndRenderMarkers();
+    enableNativeTimeEditing();
+}, 2000);
