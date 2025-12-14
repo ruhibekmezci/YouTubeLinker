@@ -1,7 +1,8 @@
-// content.js (V2.4 - Native Time Teleport)
+// content.js (V2.5 - Fullscreen Fix + Marker Fix)
 
 // --- CSS STİLLERİ ---
 const styles = `
+  /* İşaretçiler (Sarı Çizgiler) */
   .yt-linker-marker {
     position: absolute; top: 0; bottom: 0; width: 4px;
     background-color: #FFD700; z-index: 999; cursor: pointer; pointer-events: auto;
@@ -9,6 +10,7 @@ const styles = `
   }
   .yt-linker-marker:hover { transform: scaleY(1.5); background-color: #FF4500; }
   
+  /* Tooltip (Not Önizleme) */
   #yt-linker-tooltip {
     position: absolute; background: rgba(0,0,0,0.9); color: white; padding: 8px 12px;
     border-radius: 4px; font-size: 13px; font-family: Roboto, Arial; pointer-events: none;
@@ -16,20 +18,38 @@ const styles = `
     border: 1px solid #444; display: none;
   }
 
-  /* YENİ: Native Input Stili */
+  /* Native Input Stili (Işınlanma) */
   .yt-linker-native-input {
-    background: #333;
-    color: #fff;
-    border: 1px solid #3ea6ff;
-    border-radius: 2px;
-    padding: 0 4px;
-    font-family: "Roboto", "Arial", sans-serif;
-    font-size: 100%; /* YouTube font boyutuyla aynı olsun */
-    width: 60px;
-    outline: none;
-    line-height: normal;
+    background: #333; color: #fff; border: 1px solid #3ea6ff; border-radius: 2px;
+    padding: 0 4px; font-family: "Roboto", "Arial", sans-serif; font-size: 100%;
+    width: 60px; outline: none; line-height: normal;
   }
+
+  /* YENİ: Tam Ekran Uyumlu Modal Stili */
+  .yt-linker-modal-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.6); z-index: 2147483647; /* En üst katman */
+    display: flex; justify-content: center; align-items: center;
+  }
+  .yt-linker-modal-box {
+    background: #212121; color: #fff; padding: 20px; border-radius: 8px;
+    width: 400px; box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+    border: 1px solid #444; font-family: Roboto, Arial;
+  }
+  .yt-linker-modal-title { margin-bottom: 10px; font-size: 16px; font-weight: bold; }
+  .yt-linker-modal-input {
+    width: 100%; padding: 8px; margin-bottom: 15px; border-radius: 4px;
+    border: 1px solid #555; background: #121212; color: #fff; box-sizing: border-box;
+  }
+  .yt-linker-modal-buttons { text-align: right; }
+  .yt-linker-btn {
+    padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; margin-left: 10px;
+  }
+  .yt-linker-btn-cancel { background: transparent; color: #aaa; }
+  .yt-linker-btn-save { background: #3ea6ff; color: #000; }
+  .yt-linker-btn-save:hover { background: #65b8ff; }
 `;
+
 const styleSheet = document.createElement("style");
 styleSheet.innerText = styles;
 document.head.appendChild(styleSheet);
@@ -62,16 +82,12 @@ function formatTime(totalSeconds) {
 
 function parseInputTime(input) {
     if (!input) return null;
-    // Boşlukları temizle ve : işaretine göre böl
     const parts = input.trim().split(':').map(Number);
     let seconds = 0;
-    
     if (parts.some(isNaN)) return null; 
-
-    if (parts.length === 1) { seconds = parts[0]; } // Sadece saniye (örn: 90)
-    else if (parts.length === 2) { seconds = parts[0] * 60 + parts[1]; } // dk:sn
-    else if (parts.length === 3) { seconds = parts[0] * 3600 + parts[1] * 60 + parts[2]; } // sa:dk:sn
-    
+    if (parts.length === 1) { seconds = parts[0]; }
+    else if (parts.length === 2) { seconds = parts[0] * 60 + parts[1]; }
+    else if (parts.length === 3) { seconds = parts[0] * 3600 + parts[1] * 60 + parts[2]; }
     return seconds;
 }
 
@@ -120,76 +136,101 @@ function compressImage(videoElement) {
     return canvas.toDataURL("image/jpeg", 0.6);
 }
 
-// --- YENİ: NATIVE TIME EDITOR (SAĞ TIK IŞINLANMA) ---
+// --- YENİ: ÖZEL MODAL FONKSİYONU (Fullscreen Fix) ---
+function openCustomModal(title, callback) {
+  const old = document.getElementById('yt-linker-modal');
+  if (old) old.remove();
+
+  const overlay = document.createElement('div');
+  overlay.id = 'yt-linker-modal';
+  overlay.className = 'yt-linker-modal-overlay';
+  
+  overlay.innerHTML = `
+    <div class="yt-linker-modal-box">
+      <div class="yt-linker-modal-title">${title}</div>
+      <input type="text" class="yt-linker-modal-input" placeholder="Notunuzu buraya yazın..." autofocus>
+      <div class="yt-linker-modal-buttons">
+        <button class="yt-linker-btn yt-linker-btn-cancel">İptal</button>
+        <button class="yt-linker-btn yt-linker-btn-save">Kaydet</button>
+      </div>
+    </div>
+  `;
+
+  // Tam ekranda mıyız kontrol et ve ona göre ekle
+  const fullscreenElement = document.fullscreenElement || document.webkitFullscreenElement;
+  if (fullscreenElement) {
+    fullscreenElement.appendChild(overlay);
+  } else {
+    document.body.appendChild(overlay);
+  }
+
+  const input = overlay.querySelector('input');
+  const btnSave = overlay.querySelector('.yt-linker-btn-save');
+  const btnCancel = overlay.querySelector('.yt-linker-btn-cancel');
+
+  input.focus();
+
+  const close = () => { overlay.remove(); };
+  
+  const save = () => {
+    const text = input.value;
+    close();
+    if (text) callback(text); 
+    else callback(null);      
+  };
+
+  btnSave.onclick = save;
+  btnCancel.onclick = () => { close(); callback(null); };
+
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') save();
+    if (e.key === 'Escape') { close(); callback(null); }
+    e.stopPropagation(); 
+  });
+}
+
+// --- NATIVE TIME EDITOR ---
 function enableNativeTimeEditing() {
-    // Süre elementini bul (YouTube player'daki sol alt 'Current Time' yazısı)
     const timeCurrentElement = document.querySelector('.ytp-time-current');
-    
-    // Element yoksa veya zaten dinleyici eklediysek çık
     if (!timeCurrentElement || timeCurrentElement.classList.contains('yt-linker-editable')) return;
 
-    // İşaretle ki tekrar tekrar dinleyici eklemeyelim
     timeCurrentElement.classList.add('yt-linker-editable');
-    timeCurrentElement.title = "Sağ Tık: Manuel Süre Gir"; // İpucu
+    timeCurrentElement.title = "Sağ Tık: Manuel Süre Gir"; 
 
-    // SAĞ TIK (Context Menu) Dinleyicisi
     timeCurrentElement.addEventListener('contextmenu', (e) => {
-        e.preventDefault(); // Tarayıcının sağ tık menüsünü engelle
-        e.stopPropagation();
+        e.preventDefault(); e.stopPropagation();
 
         const parent = timeCurrentElement.parentElement;
         const currentText = timeCurrentElement.textContent;
-
-        // 1. Orijinal yazıyı gizle
         timeCurrentElement.style.display = 'none';
 
-        // 2. Input oluştur
         const input = document.createElement('input');
-        input.type = 'text';
-        input.value = currentText;
-        input.className = 'yt-linker-native-input';
-        
-        // 3. Inputu orijinal yazının hemen önüne ekle
+        input.type = 'text'; input.value = currentText; input.className = 'yt-linker-native-input';
         parent.insertBefore(input, timeCurrentElement);
-        input.focus();
-        input.select(); // İçindeki yazıyı seç ki hemen yazabilsin
+        input.focus(); input.select();
 
-        // Fonksiyon: Temizlik ve Geri Dönüş
-        const cleanup = () => {
-            input.remove();
-            timeCurrentElement.style.display = ''; // Orijinal yazıyı geri getir
-        };
+        const cleanup = () => { input.remove(); timeCurrentElement.style.display = ''; };
 
-        // 4. Tuş Dinleyicisi (Enter)
         input.addEventListener('keydown', (ev) => {
             if (ev.key === 'Enter') {
                 ev.preventDefault();
                 const seconds = parseInputTime(input.value);
                 const video = document.querySelector('video');
-
                 if (seconds !== null && video) {
-                    if (seconds <= video.duration) {
-                        video.currentTime = seconds;
-                        showNotification(`🚀 Işınlandı: ${input.value}`);
-                    } else {
-                        showNotification("❌ Süre video uzunluğunu aşıyor!", "error");
-                    }
+                    if (seconds <= video.duration) { video.currentTime = seconds; showNotification(`🚀 Işınlandı: ${input.value}`); } 
+                    else { showNotification("❌ Süre video uzunluğunu aşıyor!", "error"); }
                 }
                 cleanup();
             }
-            if (ev.key === 'Escape') {
-                cleanup(); // İptal et
-            }
-            ev.stopPropagation(); // Video kısayollarını engelle
+            if (ev.key === 'Escape') cleanup();
+            ev.stopPropagation(); 
         });
-
-        // 5. Odak kaybolursa (Blur) iptal et
         input.addEventListener('blur', cleanup);
     });
 }
 
 
-// --- NOT SİSTEMİ (Mevcut) ---
+// --- NOT SİSTEMİ ---
 function loadAndRenderMarkers() {
   const videoID = getVideoID(); if (!videoID) return;
   document.querySelectorAll('.yt-linker-marker').forEach(el => el.remove());
@@ -226,8 +267,9 @@ function loadAndRenderMarkers() {
       marker.addEventListener('click', (e) => { e.stopPropagation(); videoElement.currentTime = note.time; });
       marker.addEventListener('contextmenu', (e) => {
         e.preventDefault(); e.stopPropagation();
-        const newText = prompt("Notu düzenle:", note.text);
-        if (newText !== null) { updateOrDeleteNote(videoID, note.time, newText); }
+        openCustomModal("Notu Düzenle", (newText) => {
+             if (newText !== null) updateOrDeleteNote(videoID, note.time, newText);
+        });
       });
       progressBar.appendChild(marker);
     });
@@ -263,24 +305,27 @@ function saveNote() {
   const videoElement = document.querySelector('video');
   const currentTime = videoElement.currentTime;
   videoElement.pause(); 
-  const noteText = prompt(`Bu saniye (${formatTime(currentTime)}) için notunuz:`);
-  if (noteText) {
-    chrome.storage.local.get([videoID], (result) => {
-      let data = result[videoID];
-      let notes = [];
-      if (Array.isArray(data)) notes = data; 
-      else if (data) notes = data.notes;
-      const newNote = { time: currentTime, text: noteText };
-      if (latestScreenshot) { newNote.image = latestScreenshot; latestScreenshot = null; }
-      notes.push(newNote);
-      const saveData = { title: videoData.title, url: videoData.baseUrl, notes: notes };
-      chrome.storage.local.set({ [videoID]: saveData }, () => {
-        const msg = newNote.image ? "✅ Not + Resim Kaydedildi!" : "✅ Not Kaydedildi!";
-        showNotification(msg); loadAndRenderMarkers();
+
+  // YENİ: Custom Modal kullanıyoruz
+  openCustomModal(`Not Ekle (${formatTime(currentTime)})`, (noteText) => {
+    if (noteText) {
+      chrome.storage.local.get([videoID], (result) => {
+        let data = result[videoID];
+        let notes = [];
+        if (Array.isArray(data)) notes = data; 
+        else if (data) notes = data.notes;
+        const newNote = { time: currentTime, text: noteText };
+        if (latestScreenshot) { newNote.image = latestScreenshot; latestScreenshot = null; }
+        notes.push(newNote);
+        const saveData = { title: videoData.title, url: videoData.baseUrl, notes: notes };
+        chrome.storage.local.set({ [videoID]: saveData }, () => {
+          const msg = newNote.image ? "✅ Not + Resim Kaydedildi!" : "✅ Not Kaydedildi!";
+          showNotification(msg); loadAndRenderMarkers(); // İşaretçileri Çiz!
+        });
       });
-    });
-  }
-  videoElement.play(); 
+    }
+    videoElement.play(); 
+  });
 }
 
 // --- CORE FONKSİYONLAR ---
@@ -320,9 +365,6 @@ let lastUrl = location.href;
 const observer = new MutationObserver(() => {
   const url = location.href;
   if (url !== lastUrl) { lastUrl = url; setTimeout(loadAndRenderMarkers, 2000); }
-  
-  // Sürekli kontrol et, çünkü YouTube arayüzü dinamiktir.
-  // Native Time Edit özelliğini ekle/kontrol et.
   enableNativeTimeEditing();
 });
 observer.observe(document.body, {subtree: true, childList: true});
